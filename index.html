@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BTC/USD — LIVE</title>
+<title>BTC/USD-LIVE</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
@@ -262,8 +262,6 @@
     try {
       if ('wakeLock' in navigator) {
         wakeLock = await navigator.wakeLock.request('screen');
-        wakeText.textContent = 'ecran: activ non-stop';
-        wakeIcon.textContent = '●';
         wakeLock.addEventListener('release', () => {
           wakeText.textContent = 'ecran: eliberat';
           wakeIcon.textContent = '○';
