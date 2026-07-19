@@ -187,7 +187,6 @@
 
 <footer>
   <div>ultima actualizare: <span id="lastUpdate">--</span></div>
-  <div class="wake-status"><span id="wakeIcon">○</span><span id="wakeText">ecran: se verifica</span></div>
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -268,7 +267,7 @@
         });
       } else {
         wakeText.textContent = 'ecran: nesuportat, atinge ecranul';
-        showToast('Browserul tau nu suporta Wake Lock direct. Foloseste Chrome pe Android pentru cele mai bune rezultate.', 5000);
+        showToast('Foloseste Chrome.', 5000);
       }
     } catch (err) {
       wakeText.textContent = 'ecran: atinge pentru a activa';
