@@ -256,7 +256,7 @@
   }
 
   fetchPrice();
-  setInterval(fetchPrice, 15000);
+  setInterval(fetchPrice, 5000);
 
   async function requestWakeLock() {
     try {
@@ -270,7 +270,7 @@
         });
       } else {
         wakeText.textContent = 'ecran: nesuportat, atinge ecranul';
-        showToast('Foloseste Chrome.', 5000);
+        showToast('Browserul tau nu suporta Wake Lock direct. Foloseste Chrome pe Android pentru cele mai bune rezultate.', 5000);
       }
     } catch (err) {
       wakeText.textContent = 'ecran: atinge pentru a activa';
