@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>BTC/USD-LIVE</title>
+<title>BTC/USD — LIVE</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
 
@@ -187,6 +187,7 @@
 
 <footer>
   <div>ultima actualizare: <span id="lastUpdate">--</span></div>
+  <div class="wake-status"><span id="wakeIcon">○</span><span id="wakeText">ecran: se verifica</span></div>
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -204,6 +205,8 @@
 
   let lastPrice = null;
   let wakeLock = null;
+  let ws = null;
+  let reconnectTimer = null;
 
   function showToast(msg, ms = 3500) {
     toastEl.textContent = msg;
@@ -221,51 +224,70 @@
   setInterval(updateClock, 1000);
   updateClock();
 
-  async function fetchPrice() {
-    try {
-      const res = await fetch('https://api.kraken.com/0/public/Ticker?pair=XBTUSD');
-      if (!res.ok) throw new Error('bad response');
-      const data = await res.json();
-      if (data.error && data.error.length) throw new Error('kraken error');
-      const ticker = data.result[Object.keys(data.result)[0]];
-      const price = parseFloat(ticker.c[0]);
-      const openPrice = parseFloat(ticker.o);
-      const changePct = ((price - openPrice) / openPrice) * 100;
+  function applyTick(price, changePct) {
+    const isDown = lastPrice !== null && price < lastPrice;
 
-      const isDown = lastPrice !== null && price < lastPrice;
-      const isUp = lastPrice !== null && price > lastPrice;
+    priceEl.textContent = formatPrice(price);
+    priceEl.classList.remove('down', 'flash');
+    void priceEl.offsetWidth;
+    if (isDown) priceEl.classList.add('down');
+    priceEl.classList.add('flash');
 
-      priceEl.textContent = formatPrice(price);
-      priceEl.classList.remove('down', 'flash');
-      void priceEl.offsetWidth;
-      if (isDown) priceEl.classList.add('down');
-      priceEl.classList.add('flash');
+    changeEl.innerHTML = '<span class="val ' + (changePct >= 0 ? 'up' : 'down') + '">'
+      + (changePct >= 0 ? '▲ +' : '▼ ') + changePct.toFixed(2) + '%</span>';
 
-      changeEl.innerHTML = '<span class="val ' + (changePct >= 0 ? 'up' : 'down') + '">'
-        + (changePct >= 0 ? '▲ +' : '▼ ') + changePct.toFixed(2) + '%</span>';
-
-      lastPrice = price;
-      lastUpdateEl.textContent = new Date().toLocaleTimeString('ro-RO', { hour12: false });
-      statusDot.classList.remove('off');
-      statusText.textContent = 'LIVE';
-    } catch (e) {
-      statusDot.classList.add('off');
-      statusText.textContent = 'OFFLINE';
-    }
+    lastPrice = price;
+    lastUpdateEl.textContent = new Date().toLocaleTimeString('ro-RO', { hour12: false });
   }
 
-  fetchPrice();
-  setInterval(fetchPrice, 5000);
+  function connect() {
+    ws = new WebSocket('wss://ws.kraken.com/v2');
+
+    ws.onopen = () => {
+      statusDot.classList.remove('off');
+      statusText.textContent = 'LIVE';
+      ws.send(JSON.stringify({
+        method: 'subscribe',
+        params: { channel: 'ticker', symbol: ['BTC/USD'] }
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.channel === 'ticker' && msg.data && msg.data.length) {
+          const tick = msg.data[0];
+          applyTick(tick.last, tick.change_pct);
+        }
+      } catch (e) {}
+    };
+
+    ws.onclose = () => {
+      statusDot.classList.add('off');
+      statusText.textContent = 'RECONECTARE';
+      reconnectTimer = setTimeout(connect, 2000);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  }
+
+  connect();
 
   async function requestWakeLock() {
     try {
       if ('wakeLock' in navigator) {
         wakeLock = await navigator.wakeLock.request('screen');
+        wakeText.textContent = 'ecran: activ non-stop';
+        wakeIcon.textContent = '●';
         wakeLock.addEventListener('release', () => {
+          wakeText.textContent = 'ecran: eliberat';
+          wakeIcon.textContent = '○';
         });
       } else {
         wakeText.textContent = 'ecran: nesuportat, atinge ecranul';
-        showToast('Foloseste Chrome.', 5000);
+        showToast('Browserul tau nu suporta Wake Lock direct. Foloseste Chrome pe Android pentru cele mai bune rezultate.', 5000);
       }
     } catch (err) {
       wakeText.textContent = 'ecran: atinge pentru a activa';
