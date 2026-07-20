@@ -279,11 +279,7 @@
     try {
       if ('wakeLock' in navigator) {
         wakeLock = await navigator.wakeLock.request('screen');
-        wakeText.textContent = 'ecran: activ non-stop';
-        wakeIcon.textContent = '●';
         wakeLock.addEventListener('release', () => {
-          wakeText.textContent = 'ecran: eliberat';
-          wakeIcon.textContent = '○';
         });
       } else {
         wakeText.textContent = 'ecran: nesuportat, atinge ecranul';
